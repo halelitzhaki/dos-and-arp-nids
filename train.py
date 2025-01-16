@@ -95,7 +95,7 @@ def encode_labels(train_data, test_data):
 
 
 def select_features(X_train, y_train, X_test):
-    select_model = SelectKBest(mutual_info_classif, k=20)
+    select_model = SelectKBest(mutual_info_classif, k=16)
     select_model.fit(X_train, y_train)
     selected_features = X_train.columns[select_model.get_support()]
 
@@ -128,7 +128,7 @@ def evaluate_model(model, X_test_scaled, y_test, x_train_scaled, y_train, le):
     print(f"F1 Score: {f1_score(y_test, y_pred, average='weighted')}")
 
     accuracies = cross_val_score(estimator=model, X=x_train_scaled, y=y_train, cv=5)
-    print('Performance on the validation set: Cross Validation Score = %0.4f' % accuracies.mean())
+    print('Cross Validation Score = %0.4f' % accuracies.mean())
 
 
 
