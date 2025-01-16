@@ -2,10 +2,12 @@ import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import LabelEncoder, StandardScaler
 from sklearn.metrics import classification_report, confusion_matrix, accuracy_score, f1_score
-from sklearn.model_selection import cross_val_score, GridSearchCV
+from sklearn.model_selection import cross_val_score
 from sklearn.feature_selection import SelectKBest, mutual_info_classif
+# from xgboost import XGBClassifier
 import seaborn as sns
 import matplotlib.pyplot as plt
+
 
 def categorize_attack(label):
     dos_attacks = [1, 2, 3, 4, 5, 6, 19, 20]  # DoS Attacks
@@ -93,7 +95,7 @@ def encode_labels(train_data, test_data):
 
 
 def select_features(X_train, y_train, X_test):
-    select_model = SelectKBest(mutual_info_classif, k=30)
+    select_model = SelectKBest(mutual_info_classif, k=20)
     select_model.fit(X_train, y_train)
     selected_features = X_train.columns[select_model.get_support()]
 
@@ -107,21 +109,28 @@ def scale_features(X_train, X_test):
     X_test_scaled = scaler.transform(X_test)
     return X_train_scaled, X_test_scaled
 
+
 def train_random_forest(X_train_scaled, y_train):
     rf_model = RandomForestClassifier(random_state=42)
     rf_model.fit(X_train_scaled, y_train)
     return rf_model
 
+
 # Function to evaluate the model
 def evaluate_model(model, X_test_scaled, y_test, x_train_scaled, y_train, le):
     y_pred = model.predict(X_test_scaled)
-    print("Classification Report:")
-    print(classification_report(y_test, y_pred, target_names=le.classes_))
-    print("\nConfusion Matrix:")
-    print(confusion_matrix(y_test, y_pred))
-    print("Accuracy:", accuracy_score(y_test, y_pred))
+    print(f'Classification Report: {classification_report(y_test, y_pred, target_names=le.classes_)}')
+
+    print(f'Confusion Matrix: \n{confusion_matrix(y_test, y_pred)}')
+
+    print(f'Accuracy: {accuracy_score(y_test, y_pred)}')
+
+    print(f"F1 Score: {f1_score(y_test, y_pred, average='weighted')}")
+
     accuracies = cross_val_score(estimator=model, X=x_train_scaled, y=y_train, cv=5)
     print('Performance on the validation set: Cross Validation Score = %0.4f' % accuracies.mean())
+
+
 
 
 # Function to visualize attack type distribution
