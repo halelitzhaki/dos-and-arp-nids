@@ -3,7 +3,8 @@ from sklearn.metrics import confusion_matrix, accuracy_score, f1_score
 import joblib
 
 
-def open_files(model_path, dataset_path):
+def open_files(model_path, dataset_path) -> []:
+    """ Open and load the model and dataset files. """
     loaded_model = joblib.load(model_path)
     print("Model loaded successfully!")
     loaded_dataset = pd.read_csv(dataset_path, header=None)

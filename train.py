@@ -9,7 +9,8 @@ import matplotlib.pyplot as plt
 import joblib
 
 
-def categorize_attack(label):
+def categorize_attack(label) -> str:
+    """ Classifies the label if it's DoS/ ARP MitM/ Other, based on the attack number identifier. """
     dos_attacks = [1, 2, 3, 4, 5, 6, 19, 20]  # DoS Attacks
     arp_attacks = [8, 9, 10, 14, 15, 16, 17]  # ARP MitM Attacks
     if label in dos_attacks:
@@ -20,10 +21,12 @@ def categorize_attack(label):
         return "Other"
 
 
-# Function to load and preprocess data
-def load_and_preprocess_data(train_path, test_path):
+def load_and_preprocess_data(train_path, test_path) -> []:
+    """ Load the train and test datasets and preprocess them. """
     train_dataset = pd.read_csv(train_path, header=None)
     test_dataset = pd.read_csv(test_path, header=None)
+
+    # Adding the features names to the datasets
     columns = (['duration'
         , 'protocol_type'
         , 'service'
@@ -67,7 +70,6 @@ def load_and_preprocess_data(train_path, test_path):
         , 'dst_host_srv_rerror_rate'
         , 'attack'
         , 'level'])
-
     train_dataset.columns = columns
     test_dataset.columns = columns
 
@@ -77,8 +79,8 @@ def load_and_preprocess_data(train_path, test_path):
     return train_dataset, test_dataset
 
 
-# Function to encode labels
-def encode_labels(train_data, test_data):
+def encode_labels(train_data, test_data) -> []:
+    """ Encoding the data labels, and splitting them to X and y. """
     categorical_columns = ['protocol_type', 'service', 'flag', 'attack']
     le = LabelEncoder()
     for col in categorical_columns:
@@ -94,7 +96,8 @@ def encode_labels(train_data, test_data):
     return X_train, X_test, y_train, y_test, le
 
 
-def select_features(X_train, y_train, X_test):
+def select_features(X_train, y_train, X_test) -> []:
+    """ Select the features for the model, with Select-K-Best algorithm. """
     select_model = SelectKBest(mutual_info_classif, k=16)
     select_model.fit(X_train, y_train)
     selected_features = X_train.columns[select_model.get_support()]
@@ -102,23 +105,23 @@ def select_features(X_train, y_train, X_test):
     return X_train[selected_features], X_test[selected_features]
 
 
-# Function to scale features
-def scale_features(X_train, X_test):
+def scale_features(X_train, X_test) -> []:
+    """ Scaling and normalizing the features' values for the model's input. """
     scaler = StandardScaler()
     X_train_scaled = scaler.fit_transform(X_train)
     X_test_scaled = scaler.transform(X_test)
     return X_train_scaled, X_test_scaled
 
 
-def train_random_forest(X_train_scaled, y_train):
+def train_random_forest(X_train_scaled, y_train) -> RandomForestClassifier:
+    """ Creating and training the Random-Forest model. """
     rf_model = RandomForestClassifier(random_state=42)
     rf_model.fit(X_train_scaled, y_train)
     return rf_model
 
 
-def evaluate_model(model, y_test, x_train_scaled, y_train, le):
-    print(f'Classification Report: \n{classification_report(y_test, y_pred, target_names=le.classes_)}')
-
+def evaluate_model(model, y_test, x_train_scaled, y_train, le) -> None:
+    """" Evaluates the model accuracy with Cross-Validation and Grid-Search. """
     print(f'Cross Validation Score = {cross_val_score(estimator=model, X=x_train_scaled, y=y_train, cv=5).mean()}')
 
     param_grid = {
@@ -131,8 +134,8 @@ def evaluate_model(model, y_test, x_train_scaled, y_train, le):
     print(f'Grid Search Cross-Validation Score: {grid_search.best_score_}')
 
 
-# Function to visualize attack type distribution
-def plot_attack_distribution(train_data):
+def plot_attack_distribution(train_data) -> None:
+    """ Visualizing the attack type distribution. """
     plt.figure(figsize=(10, 6))
     sns.countplot(x=train_data)
     plt.title('Distribution of Attack Types')
@@ -142,8 +145,8 @@ def plot_attack_distribution(train_data):
     plt.show()
 
 
-# Function to compare predictions with true labels
-def compare_predictions(rf_model, X_test_scaled, y_test, le):
+def compare_predictions(rf_model, X_test_scaled, y_test, le) -> None:
+    """ Comparing the predictions with true labels. """
     y_pred = rf_model.predict(X_test_scaled)
     comparison_df = pd.DataFrame({
         'True Label': le.inverse_transform(y_test),
@@ -153,15 +156,16 @@ def compare_predictions(rf_model, X_test_scaled, y_test, le):
     print(comparison_df.sample(10))
 
 
-# Function to analyze predictions and true labels distribution
-def analyze_predictions_distribution(y_pred, y_test, le):
+def analyze_predictions_distribution(y_pred, y_test, le) -> None:
+    """ Analyzing the predictions and true labels distribution. """
     pred_counts = pd.Series(le.inverse_transform(y_pred)).value_counts()
     true_counts = pd.Series(le.inverse_transform(y_test)).value_counts()
     print("Prediction Distribution:\n", pred_counts)
     print("\nTrue Label Distribution:\n", true_counts)
 
 
-def save_files(model, X_test, y_test, features):
+def save_files(model, X_test, y_test, features) -> None:
+    """ Saves the model to .pkl, and the test's dataset to .csv """
     joblib.dump(model, 'nids_model.pkl')
     print("Model saved successfully!")
 
@@ -169,10 +173,9 @@ def save_files(model, X_test, y_test, features):
     X_test_df = pd.DataFrame(X_test)
     combined = pd.concat([X_test_df, y_test_series], axis=1)
     combined.to_csv('test_data.csv', index=False, header=False)
-    print("Data saved to test_data.csv")
+    print("Dataset for test saved successfully!")
 
 
-# Main function to execute the workflow
 if __name__ == '__main__':
     print("Hello! \nThis script is building the model, and then evaluates it with Cross-Validation and Grid-Search. "
           "\nIt might take a while, please be patient... :)\n")
