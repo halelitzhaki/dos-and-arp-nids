@@ -1,12 +1,12 @@
 import pandas as pd
-from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import LabelEncoder, StandardScaler
-from sklearn.metrics import classification_report, confusion_matrix, accuracy_score, f1_score
-from sklearn.model_selection import cross_val_score
 from sklearn.feature_selection import SelectKBest, mutual_info_classif
-# from xgboost import XGBClassifier
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import cross_val_score, GridSearchCV
+from sklearn.metrics import classification_report
 import seaborn as sns
 import matplotlib.pyplot as plt
+import joblib
 
 
 def categorize_attack(label):
@@ -116,21 +116,19 @@ def train_random_forest(X_train_scaled, y_train):
     return rf_model
 
 
-# Function to evaluate the model
-def evaluate_model(model, X_test_scaled, y_test, x_train_scaled, y_train, le):
-    y_pred = model.predict(X_test_scaled)
-    print(f'Classification Report: {classification_report(y_test, y_pred, target_names=le.classes_)}')
+def evaluate_model(model, y_test, x_train_scaled, y_train, le):
+    print(f'Classification Report: \n{classification_report(y_test, y_pred, target_names=le.classes_)}')
 
-    print(f'Confusion Matrix: \n{confusion_matrix(y_test, y_pred)}')
+    print(f'Cross Validation Score = {cross_val_score(estimator=model, X=x_train_scaled, y=y_train, cv=5).mean()}')
 
-    print(f'Accuracy: {accuracy_score(y_test, y_pred)}')
-
-    print(f"F1 Score: {f1_score(y_test, y_pred, average='weighted')}")
-
-    accuracies = cross_val_score(estimator=model, X=x_train_scaled, y=y_train, cv=5)
-    print('Cross Validation Score = %0.4f' % accuracies.mean())
-
-
+    param_grid = {
+        'n_estimators': [100, 200, 300],
+        'max_depth': [10, 20, None],
+        'min_samples_split': [2, 5, 10]
+    }
+    grid_search = GridSearchCV(RandomForestClassifier(random_state=42), param_grid,
+                               scoring="f1_macro", n_jobs=-1, return_train_score=True).fit(X_train_scaled, y_train)
+    print(f'Grid Search Cross-Validation Score: {grid_search.best_score_}')
 
 
 # Function to visualize attack type distribution
@@ -163,34 +161,51 @@ def analyze_predictions_distribution(y_pred, y_test, le):
     print("\nTrue Label Distribution:\n", true_counts)
 
 
+def save_files(model, X_test, y_test, features):
+    joblib.dump(model, 'nids_model.pkl')
+    print("Model saved successfully!")
+
+    y_test_series = pd.Series(y_test)
+    X_test_df = pd.DataFrame(X_test)
+    combined = pd.concat([X_test_df, y_test_series], axis=1)
+    combined.to_csv('test_data.csv', index=False, header=False)
+    print("Data saved to test_data.csv")
+
+
 # Main function to execute the workflow
 if __name__ == '__main__':
+    print("Hello! \nThis script is building the model, and then evaluates it with Cross-Validation and Grid-Search. "
+          "\nIt might take a while, please be patient... :)\n")
+
     train_dataset_file_path = 'Datasets/KDDTrain+.txt'
     test_dataset_file_path = 'Datasets/KDDTest+.txt'
 
-    # Step 1: Load and preprocess data
+    # Load and preprocess data
     train_data, test_data = load_and_preprocess_data(train_dataset_file_path, test_dataset_file_path)
 
-    # Step 2: Encode labels
+    # Encode labels
     X_train, X_test, y_train, y_test, le = encode_labels(train_data, test_data)
 
     X_train, X_test = select_features(X_train, y_train, X_test)
 
-    # Step 3: Scale features
+    # Scale features
     X_train_scaled, X_test_scaled = scale_features(X_train, X_test)
 
-    # Step 4: Train the model
+    # Train the model
     rf_model = train_random_forest(X_train_scaled, y_train)
 
-    # Step 5: Evaluate the model
-    evaluate_model(rf_model, X_test_scaled, y_test, X_train_scaled, y_train, le)
+    # Evaluate the model
+    evaluate_model(rf_model, y_test, X_train_scaled, y_train, le)
 
-    # Step 6: Visualize attack type distribution
+    # Visualize attack type distribution
     plot_attack_distribution(train_data['attack_category'])
 
-    # Step 7: Compare predictions with true labels
+    # Compare predictions with true labels
     compare_predictions(rf_model, X_test_scaled, y_test, le)
 
-    # Step 8: Analyze predictions and true labels distribution
+    # Analyze predictions and true labels distribution
     y_pred = rf_model.predict(X_test_scaled)
     analyze_predictions_distribution(y_pred, y_test, le)
+
+    # Save the model and the test dataset
+    save_files(rf_model, X_test_scaled, y_test, X_test.columns)
