@@ -3,9 +3,9 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import LabelEncoder, StandardScaler
 from sklearn.metrics import classification_report, confusion_matrix, accuracy_score, f1_score
 from sklearn.model_selection import cross_val_score, GridSearchCV
+from sklearn.feature_selection import SelectKBest, mutual_info_classif
 import seaborn as sns
 import matplotlib.pyplot as plt
-
 
 def categorize_attack(label):
     dos_attacks = [1, 2, 3, 4, 5, 6, 19, 20]  # DoS Attacks
@@ -22,6 +22,53 @@ def categorize_attack(label):
 def load_and_preprocess_data(train_path, test_path):
     train_dataset = pd.read_csv(train_path, header=None)
     test_dataset = pd.read_csv(test_path, header=None)
+    columns = (['duration'
+        , 'protocol_type'
+        , 'service'
+        , 'flag'
+        , 'src_bytes'
+        , 'dst_bytes'
+        , 'land'
+        , 'wrong_fragment'
+        , 'urgent'
+        , 'hot'
+        , 'num_failed_logins'
+        , 'logged_in'
+        , 'num_compromised'
+        , 'root_shell'
+        , 'su_attempted'
+        , 'num_root'
+        , 'num_file_creations'
+        , 'num_shells'
+        , 'num_access_files'
+        , 'num_outbound_cmds'
+        , 'is_host_login'
+        , 'is_guest_login'
+        , 'count'
+        , 'srv_count'
+        , 'serror_rate'
+        , 'srv_serror_rate'
+        , 'rerror_rate'
+        , 'srv_rerror_rate'
+        , 'same_srv_rate'
+        , 'diff_srv_rate'
+        , 'srv_diff_host_rate'
+        , 'dst_host_count'
+        , 'dst_host_srv_count'
+        , 'dst_host_same_srv_rate'
+        , 'dst_host_diff_srv_rate'
+        , 'dst_host_same_src_port_rate'
+        , 'dst_host_srv_diff_host_rate'
+        , 'dst_host_serror_rate'
+        , 'dst_host_srv_serror_rate'
+        , 'dst_host_rerror_rate'
+        , 'dst_host_srv_rerror_rate'
+        , 'attack'
+        , 'level'])
+
+    train_dataset.columns = columns
+    test_dataset.columns = columns
+
     train_dataset['attack_category'] = train_dataset.iloc[:, -1].apply(categorize_attack)
     test_dataset['attack_category'] = test_dataset.iloc[:, -1].apply(categorize_attack)
 
@@ -30,19 +77,27 @@ def load_and_preprocess_data(train_path, test_path):
 
 # Function to encode labels
 def encode_labels(train_data, test_data):
-    categorical_columns = [1, 2, 3]  # protocol_type, service, flag
+    categorical_columns = ['protocol_type', 'service', 'flag', 'attack']
     le = LabelEncoder()
     for col in categorical_columns:
         train_data[col] = le.fit_transform(train_data[col])
-        test_data[col] = le.transform(test_data[col])
+        test_data[col] = le.fit_transform(test_data[col])
 
     y_train = le.fit_transform(train_data['attack_category'])
     y_test = le.transform(test_data['attack_category'])
 
-    X_train = train_data.drop(columns=[41, 'attack_category'])
-    X_test = test_data.drop(columns=[41, 'attack_category'])
+    X_train = train_data.drop(columns=['attack', 'attack_category'], axis=1)
+    X_test = test_data.drop(columns=['attack', 'attack_category'], axis=1)
 
     return X_train, X_test, y_train, y_test, le
+
+
+def select_features(X_train, y_train, X_test):
+    select_model = SelectKBest(mutual_info_classif, k=30)
+    select_model.fit(X_train, y_train)
+    selected_features = X_train.columns[select_model.get_support()]
+
+    return X_train[selected_features], X_test[selected_features]
 
 
 # Function to scale features
@@ -56,20 +111,6 @@ def train_random_forest(X_train_scaled, y_train):
     rf_model = RandomForestClassifier(random_state=42)
     rf_model.fit(X_train_scaled, y_train)
     return rf_model
-
-def train_grid_search(X_train_scaled, y_train):
-    param_grid = {
-        'n_estimators': [100, 200, 300],
-        'max_depth': [10, 20, None],
-        'min_samples_split': [2, 5, 10]
-    }
-    grid_search = GridSearchCV(RandomForestClassifier(random_state=42), param_grid, cv=3, n_jobs=-1, verbose=2)
-    grid_search.fit(X_train_scaled, y_train)
-
-    y_pred_optimized = grid_search.best_estimator_.predict(X_test_scaled)
-    print("Optimized Model - Classification Report:\n",
-          classification_report(y_test, y_pred_optimized, target_names=le.classes_))
-    print("Optimized Accuracy:", accuracy_score(y_test, y_pred_optimized))
 
 # Function to evaluate the model
 def evaluate_model(model, X_test_scaled, y_test, x_train_scaled, y_train, le):
@@ -124,6 +165,8 @@ if __name__ == '__main__':
     # Step 2: Encode labels
     X_train, X_test, y_train, y_test, le = encode_labels(train_data, test_data)
 
+    X_train, X_test = select_features(X_train, y_train, X_test)
+
     # Step 3: Scale features
     X_train_scaled, X_test_scaled = scale_features(X_train, X_test)
 
@@ -142,39 +185,3 @@ if __name__ == '__main__':
     # Step 8: Analyze predictions and true labels distribution
     y_pred = rf_model.predict(X_test_scaled)
     analyze_predictions_distribution(y_pred, y_test, le)
-
-
-
-#
-# def models(x_train, x_test, y_train, y_test):
-#     # Random Forest
-#     rf_model = RandomForestClassifier(random_state=42)
-#     print_scores("Random Forest", fit_and_evaluate(rf_model, x_train, x_test, y_train),
-#                  y_test, rf_model.predict(x_test))
-#
-#     # Other..
-#
-#
-# def fit_and_evaluate(model, x_train, x_test, y_train):
-#     model.fit(x_train, y_train)
-#     model_pred = model.predict(x_test)
-#     model_cross = cross_val(x_train, y_train, model)
-#     return model_cross
-#
-#
-# def print_scores(model_name, cross, y_test, y_pred):
-#     print(f'{model_name} Performance on the validation set: Cross Validation Score = %0.4f' % cross)
-#     # Make predictions
-#     # Print the accuracy
-#     print("Accuracy on test dataset: ", accuracy_score(y_test, y_pred))
-#
-#     # Calculate and print the F1 score
-#     f1 = f1_score(y_test, y_pred, average='weighted')  # Adjust 'average' as needed
-#     print(f"\nF1 Score on test dataset: {f1}")
-#
-#
-# def cross_val(x_train, y_train, model):
-#     accuracies = cross_val_score(estimator = model, X = x_train, y = y_train, cv=5)
-#     return accuracies.mean()
-
-# train_grid_search(X_train_scaled, y_train)
