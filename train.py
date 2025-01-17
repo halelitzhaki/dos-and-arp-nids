@@ -3,7 +3,6 @@ from sklearn.preprocessing import LabelEncoder, StandardScaler
 from sklearn.feature_selection import SelectKBest, mutual_info_classif
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import cross_val_score, GridSearchCV
-from sklearn.metrics import classification_report
 import seaborn as sns
 import matplotlib.pyplot as plt
 import joblib
