@@ -54,11 +54,11 @@ These results demonstrate that both Random Forest, when optimized, achieve high 
 
 1. **Clone the repository**:
    ```bash
-   git clone https://github.com/halelitzhaki/nids-with-ml.git
+   git clone https://github.com/halelitzhaki/dos-and-arp-nids.git
    ```
 2. **Navigate to the project directory**:
    ```bash
-   cd nids-with-ml
+   cd dos-and-arp-nids
    ```
 3. **Install the required packages**:
    ```bash
@@ -68,9 +68,14 @@ These results demonstrate that both Random Forest, when optimized, achieve high 
 ## Usage
 
 1. **Model Training**:
-   - Run the `train_model.py` script to train the machine learning model.
+   - Run the `python3 train_model.py` script to train the machine learning model.
 2. **Model Evaluation**:
-   - Use the `inference.py` script to show the performance of the trained model.
+   - Use the `python3 inference.py` script to show the performance of the trained model.
+
+## Acknowledgments
+
+This project was developed as part of an academic assignment to practice Maching Learning, Cyber and Network programming concepts.
+
 
 ## Contributing
 
