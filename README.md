@@ -7,7 +7,7 @@ This repository contains the implementation of a NIDS, leveraging machine learni
 - [Introduction](#introduction)
 - [Features](#features)
 - [Datasets](#datasets)
-- [Models Implemented](#models-implemented)
+- [Model Implemented](#model-implemented)
 - [Performance](#performance)
 - [Installation](#installation)
 - [Usage](#usage)
