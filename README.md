@@ -1,6 +1,6 @@
-# Network Intrusion Detection System (NIDS) Using Machine Learning
+# Network Intrusion Detection System (NIDS) of Denial of Service and ARP Man in the Middle
 
-Welcome to the **Network Intrusion Detection System (NIDS) Using Machine Learning** project. This repository contains the implementation of a NIDS, leveraging machine learning algorithms to detect and classify Denial-of-Servie and ARP Man-in-the-Middle attacks, as a part of Network Intrusion Setection Systems.
+This repository contains the implementation of a NIDS, leveraging machine learning algorithms to detect and classify Denial-of-Servie and ARP Man-in-the-Middle attacks, as a part of Network Intrusion Setection Systems.
 
 ## Table of Contents
 
